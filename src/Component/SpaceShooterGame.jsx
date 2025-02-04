@@ -85,15 +85,16 @@ const SpaceShooterGame = () => {
   };
 
   // Initialize audio context and load sounds
-  useEffect(() => {
-    const loadSounds = async () => {
-      try {
+  const initializeAudio = async () => {
+    try {
+      if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext ||
           window.webkitAudioContext)();
+      }
+      await audioContextRef.current.resume();
 
-        const laserResponse = await fetch(
-          "/assets/sounds/Laser_Shoot4.wav"
-        );
+      if (!soundsLoaded) {
+        const laserResponse = await fetch("/assets/sounds/Laser_Shoot4.wav");
         const laserData = await laserResponse.arrayBuffer();
         audioBuffersRef.current.laser =
           await audioContextRef.current.decodeAudioData(laserData);
@@ -115,31 +116,31 @@ const SpaceShooterGame = () => {
 
         audioBuffersRef.current.explosion = loadedExplosions;
         setSoundsLoaded(true);
-      } catch (error) {
-        console.error("Error loading sounds:", error);
+
+        // Initialize and play background music after sounds are loaded
+        backgroundMusicRef.current = new Audio(
+          "/assets/sounds/background_music.wav"
+        );
+        backgroundMusicRef.current.loop = true;
+        backgroundMusicRef.current.volume = 0.2;
+        try {
+          await backgroundMusicRef.current.play();
+        } catch (error) {
+          console.error("Error playing background music:", error);
+        }
       }
-    };
+    } catch (error) {
+      console.error("Error initializing audio:", error);
+    }
+  };
 
-    loadSounds();
-
+  // Initialize audio context with user interaction
+  useEffect(() => {
+    // Don't automatically load sounds, wait for user interaction
     return () => {
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
-    };
-  }, []);
-
-  // Load and play background music
-  useEffect(() => {
-    backgroundMusicRef.current = new Audio("/assets/sounds/background_music.wav");
-    backgroundMusicRef.current.loop = true; // ให้เพลงเล่นวน loop
-    backgroundMusicRef.current.volume = 0.05; // ปรับระดับเสียง
-
-    // เล่นเพลงเมื่อเกมเริ่ม
-    backgroundMusicRef.current.play();
-
-    return () => {
-      // หยุดเพลงเมื่อคอมโพเนนต์ถูกทำลาย
       if (backgroundMusicRef.current) {
         backgroundMusicRef.current.pause();
         backgroundMusicRef.current.currentTime = 0;
@@ -147,20 +148,37 @@ const SpaceShooterGame = () => {
     };
   }, []);
 
+  // Add click handler to initialize audio
+  useEffect(() => {
+    const handleClick = async () => {
+      if (!soundsLoaded) {
+        await initializeAudio();
+      }
+    };
+
+    window.addEventListener("click", handleClick);
+    window.addEventListener("keydown", handleClick);
+
+    return () => {
+      window.removeEventListener("click", handleClick);
+      window.removeEventListener("keydown", handleClick);
+    };
+  }, [soundsLoaded]);
+
   // Sound playing functions
-  const playSound = (buffer, volume = 0.1) => { // ปรับ volume เป็น 0.7
+  const playSound = (buffer, volume = 0.7) => {
     if (!audioContextRef.current || !buffer || !soundsLoaded) return;
-  
+
     try {
       const source = audioContextRef.current.createBufferSource();
       const gainNode = audioContextRef.current.createGain();
-  
+
       source.buffer = buffer;
-      gainNode.gain.value = volume; // ใช้ volume ที่ปรับแล้ว
-  
+      gainNode.gain.value = volume;
+
       source.connect(gainNode);
       gainNode.connect(audioContextRef.current.destination);
-  
+
       source.start(0);
     } catch (error) {
       console.error("Error playing sound:", error);
@@ -340,7 +358,6 @@ const SpaceShooterGame = () => {
 
     // Player shooting
     if (currentTime - lastShotTime >= playerUpgrades.fireRate) {
-      // ใช้ fireRate จาก upgrades
       const newBullets = createPlayerBullets(
         playerPosition,
         playerUpgrades.shootPattern,
@@ -357,7 +374,7 @@ const SpaceShooterGame = () => {
       prev
         .map((bullet) => ({
           ...bullet,
-          y: bullet.y + (bullet.speedY || -playerUpgrades.bulletSpeed), // ใช้ความเร็วจาก upgrades
+          y: bullet.y + (bullet.speedY || -playerUpgrades.bulletSpeed),
           x: bullet.x + (bullet.speedX || 0),
         }))
         .filter((bullet) => bullet.y > 0)
@@ -527,19 +544,19 @@ const SpaceShooterGame = () => {
     };
   }, [gameOver, playerPosition, bullets, lastShotTime, boss]);
 
- // Spawn new wave
- useEffect(() => {
-  if (waveCleared) {
-    if (currentWave % 10 === 0) {
-      setBoss(createBoss(currentWave));
-      setEnemies([]);
-    } else {
-      setBoss(null);
-      setEnemies(getWaveEnemies(currentWave));
+  // Spawn new wave
+  useEffect(() => {
+    if (waveCleared) {
+      if (currentWave % 10 === 0) {
+        setBoss(createBoss(currentWave));
+        setEnemies([]);
+      } else {
+        setBoss(null);
+        setEnemies(getWaveEnemies(currentWave));
+      }
+      setWaveCleared(false);
     }
-    setWaveCleared(false);
-  }
-}, [waveCleared, currentWave]);
+  }, [waveCleared, currentWave]);
 
   const handleRestart = () => {
     setGameOver(false);
@@ -606,11 +623,11 @@ const SpaceShooterGame = () => {
     },
     bullet: {
       position: "absolute",
-      width: `${playerUpgrades.bulletWidth}px`, // ใช้ความกว้างจาก upgrades
+      width: `${playerUpgrades.bulletWidth}px`,
       height: "12px",
       background: "linear-gradient(to bottom, #ffff00, #ff8800)",
       transform: "translate(-50%, -50%)",
-      boxShadow: "0 0 5px #ffff00",
+      boxShadow: "0 0 5px #fff",
     },
     enemyBullet: {
       position: "absolute",
@@ -625,7 +642,7 @@ const SpaceShooterGame = () => {
       position: "absolute",
       width: "100px",
       height: "100px",
-      transform: "translate(-50%, -50%)",
+      transform: "translate(-50%, -20%)",
       backgroundImage: "url(/assets/img/EM_xE4.png)",
       backgroundSize: "contain",
       backgroundRepeat: "no-repeat",
@@ -761,11 +778,6 @@ const SpaceShooterGame = () => {
           </div>
         </>
       )}
-
-      <div style={styles.hud}>
-        <div>Score: {score}</div>
-        <div style={{ marginTop: "8px" }}>Wave: {currentWave}</div>
-      </div>
 
       {gameOver && (
         <div style={styles.gameOver}>
