@@ -277,51 +277,96 @@ const SpaceShooterGame = () => {
     return bullets;
   };
 
-  // Keyboard controls
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (gameOver) return;
-      switch (e.key) {
-        case "ArrowLeft":
-          keysRef.current.left = true;
-          break;
-        case "ArrowRight":
-          keysRef.current.right = true;
-          break;
-        case "ArrowUp":
-          keysRef.current.up = true;
-          break;
-        case "ArrowDown":
-          keysRef.current.down = true;
-          break;
-      }
-    };
+// Keyboard and touch controls
+useEffect(() => {
+  const handleKeyDown = (e) => {
+    if (gameOver) return;
+    switch (e.key) {
+      case "ArrowLeft":
+        keysRef.current.left = true;
+        break;
+      case "ArrowRight":
+        keysRef.current.right = true;
+        break;
+      case "ArrowUp":
+        keysRef.current.up = true;
+        break;
+      case "ArrowDown":
+        keysRef.current.down = true;
+        break;
+    }
+  };
 
-    const handleKeyUp = (e) => {
-      switch (e.key) {
-        case "ArrowLeft":
-          keysRef.current.left = false;
-          break;
-        case "ArrowRight":
-          keysRef.current.right = false;
-          break;
-        case "ArrowUp":
-          keysRef.current.up = false;
-          break;
-        case "ArrowDown":
-          keysRef.current.down = false;
-          break;
-      }
-    };
+  const handleKeyUp = (e) => {
+    switch (e.key) {
+      case "ArrowLeft":
+        keysRef.current.left = false;
+        break;
+      case "ArrowRight":
+        keysRef.current.right = false;
+        break;
+      case "ArrowUp":
+        keysRef.current.up = false;
+        break;
+      case "ArrowDown":
+        keysRef.current.down = false;
+        break;
+    }
+  };
 
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+  // Touch controls
+  const gameContainerRef = document.querySelector('[data-game-container]');
+  let isDragging = false;
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [gameOver]);
+  const handleTouchStart = (e) => {
+    if (gameOver) return;
+    isDragging = true;
+    updatePlayerPositionFromTouch(e.touches[0]);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging || gameOver) return;
+    e.preventDefault(); // Prevent scrolling while dragging
+    updatePlayerPositionFromTouch(e.touches[0]);
+  };
+
+  const handleTouchEnd = () => {
+    isDragging = false;
+  };
+
+  const updatePlayerPositionFromTouch = (touch) => {
+    if (!gameContainerRef) return;
+    
+    const rect = gameContainerRef.getBoundingClientRect();
+    const x = ((touch.clientX - rect.left) / rect.width) * 100;
+    const y = ((touch.clientY - rect.top) / rect.height) * 100;
+    
+    setPlayerPosition({
+      x: Math.max(0, Math.min(100, x)),
+      y: Math.max(20, Math.min(90, y))
+    });
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+  window.addEventListener("keyup", handleKeyUp);
+
+  if (gameContainerRef) {
+    gameContainerRef.addEventListener("touchstart", handleTouchStart);
+    gameContainerRef.addEventListener("touchmove", handleTouchMove, { passive: false });
+    gameContainerRef.addEventListener("touchend", handleTouchEnd);
+  }
+
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+    window.removeEventListener("keyup", handleKeyUp);
+    
+    if (gameContainerRef) {
+      gameContainerRef.removeEventListener("touchstart", handleTouchStart);
+      gameContainerRef.removeEventListener("touchmove", handleTouchMove);
+      gameContainerRef.removeEventListener("touchend", handleTouchEnd);
+    }
+  };
+}, [gameOver]);
 
   // Main game loop
   const gameLoop = () => {
