@@ -14,6 +14,9 @@ const SpaceShooterGame = () => {
   });
   const [soundsLoaded, setSoundsLoaded] = useState(false);
 
+  // Background music
+  const backgroundMusicRef = useRef(null);
+
   // Game state
   const [playerPosition, setPlayerPosition] = useState({ x: 50, y: 80 });
   const [bullets, setBullets] = useState([]);
@@ -89,14 +92,17 @@ const SpaceShooterGame = () => {
           window.webkitAudioContext)();
 
         const laserResponse = await fetch(
-          "/src/assets/sounds/Laser_Shoot4.wav"
+          "/assets/sounds/Laser_Shoot4.wav"
         );
         const laserData = await laserResponse.arrayBuffer();
         audioBuffersRef.current.laser =
           await audioContextRef.current.decodeAudioData(laserData);
 
         const explosionSounds = [
-          "/assets/sounds/Explosion1.wav",
+          "/assets/sounds/Explosion.wav",
+          "/assets/sounds/Explosion2.wav",
+          "/assets/sounds/Explosion3.wav",
+          "/assets/sounds/Explosion4.wav",
         ];
 
         const loadedExplosions = await Promise.all(
@@ -123,20 +129,38 @@ const SpaceShooterGame = () => {
     };
   }, []);
 
-  // Sound playing functions
-  const playSound = (buffer, volume = 0.3) => {
-    if (!audioContextRef.current || !buffer || !soundsLoaded) return;
+  // Load and play background music
+  useEffect(() => {
+    backgroundMusicRef.current = new Audio("/assets/sounds/background_music.wav");
+    backgroundMusicRef.current.loop = true; // ให้เพลงเล่นวน loop
+    backgroundMusicRef.current.volume = 0.05; // ปรับระดับเสียง
 
+    // เล่นเพลงเมื่อเกมเริ่ม
+    backgroundMusicRef.current.play();
+
+    return () => {
+      // หยุดเพลงเมื่อคอมโพเนนต์ถูกทำลาย
+      if (backgroundMusicRef.current) {
+        backgroundMusicRef.current.pause();
+        backgroundMusicRef.current.currentTime = 0;
+      }
+    };
+  }, []);
+
+  // Sound playing functions
+  const playSound = (buffer, volume = 0.1) => { // ปรับ volume เป็น 0.7
+    if (!audioContextRef.current || !buffer || !soundsLoaded) return;
+  
     try {
       const source = audioContextRef.current.createBufferSource();
       const gainNode = audioContextRef.current.createGain();
-
+  
       source.buffer = buffer;
-      gainNode.gain.value = volume;
-
+      gainNode.gain.value = volume; // ใช้ volume ที่ปรับแล้ว
+  
       source.connect(gainNode);
       gainNode.connect(audioContextRef.current.destination);
-
+  
       source.start(0);
     } catch (error) {
       console.error("Error playing sound:", error);
