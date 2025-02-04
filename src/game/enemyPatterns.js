@@ -1,10 +1,30 @@
-// src/game/bulletPatterns.js
+// src/game/enemyPatterns.js
+
+// สร้างบอสตามเลเวล
+export const createBoss = (wave) => {
+  const bossHealth = wave * 50;
+  return {
+    id: "boss-" + wave,
+    x: 50,
+    y: 10,
+    health: bossHealth,
+    maxHealth: bossHealth,
+    type: "boss",
+    lastShot: 0,
+    shootInterval: Math.max(1000 - wave * 30, 300),
+    moveDirection: 1,
+    pattern: wave % 3,
+    moveTimer: 0,
+  };
+};
+
+// สร้างกระสุนบอส
 export const createBossBullets = (boss, wave) => {
   const bullets = [];
   const baseSpeed = 0.05 + wave * 0.001;
 
   switch (boss.pattern) {
-    case 0: // Spread shot
+    case 0: // ยิงกระจาย
       for (let i = -2; i <= 2; i++) {
         bullets.push({
           id: Math.random(),
@@ -16,7 +36,7 @@ export const createBossBullets = (boss, wave) => {
       }
       break;
 
-    case 1: // Wave shot
+    case 1: // ยิงเป็นคลื่น
       for (let i = 0; i < 3; i++) {
         bullets.push({
           id: Math.random(),
@@ -28,7 +48,7 @@ export const createBossBullets = (boss, wave) => {
       }
       break;
 
-    case 2: // Rotating shot
+    case 2: // ยิงหมุน
       const angle = (Date.now() * 0.001) % (Math.PI * 2);
       for (let i = 0; i < 4; i++) {
         const bulletAngle = angle + (i * Math.PI) / 2;
@@ -42,14 +62,15 @@ export const createBossBullets = (boss, wave) => {
       }
       break;
   }
+
   return bullets;
 };
 
+// สร้างกระสุนศัตรูทั่วไป
 export const createEnemyBullets = (enemy) => {
   const bullets = [];
   const baseSpeed = enemy.bulletSpeed || 0.05;
 
-  // Center bullet
   bullets.push({
     id: Math.random(),
     x: enemy.x,
@@ -58,7 +79,6 @@ export const createEnemyBullets = (enemy) => {
     speedY: baseSpeed,
   });
 
-  // Side bullets
   bullets.push({
     id: Math.random(),
     x: enemy.x,
@@ -76,4 +96,30 @@ export const createEnemyBullets = (enemy) => {
   });
 
   return bullets;
+};
+
+// สร้างศัตรูตามเวฟ
+export const getWaveEnemies = (wave) => {
+  const basePositions = [];
+  const enemyCount = Math.min(3 + Math.floor(wave / 5), 8);
+
+  for (let i = 0; i < enemyCount; i++) {
+    basePositions.push({
+      x: 20 + (60 * i) / (enemyCount - 1),
+      y: 0,
+    });
+  }
+
+  return basePositions.map((pos) => ({
+    id: Math.random(),
+    x: pos.x,
+    y: pos.y,
+    health: Math.ceil(wave / 3),
+    lastShot: 0,
+    shootInterval: Math.max(2000 - wave * 50, 500),
+    moveDirection: Math.random() > 0.5 ? 1 : -1,
+    bulletSpeed: Math.min(0.05 + wave * 0.002, 0.1),
+    moveTimer: 0,
+    lastMoveChange: 0,
+  }));
 };

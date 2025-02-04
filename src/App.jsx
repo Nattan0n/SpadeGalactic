@@ -1,5 +1,5 @@
 import './App.css'
-import SpaceShooterGame from './Component/SpaceShooterGame'
+import SpaceShooterGame from './SpaceShooterGame'
 
 function App() {
 

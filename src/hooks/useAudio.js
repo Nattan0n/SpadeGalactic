@@ -1,37 +1,73 @@
 // src/hooks/useAudio.js
-import { useState, useEffect, useRef } from "react";
-import {
-  createAudio,
-  initializeAudio,
-  playSound,
-  playRandomSound,
-} from "../Component/game/audio";
+import { useEffect } from "react";
+import { useAudio as useAudioContext } from "../context/AudioContext";
 
-export const useAudio = () => {
-  const [soundsLoaded, setSoundsLoaded] = useState(false);
-  const laserSound = useRef(createAudio());
-  const explosionSounds = useRef([
-    createAudio(),
-    createAudio(),
-    createAudio(),
-    createAudio(),
-  ]);
+export default function useAudio() {
+  const {
+    audioContextRef,
+    audioBuffersRef,
+    soundsLoaded,
+    backgroundMusicRef,
+    initializeAudio,
+    playSound,
+  } = useAudioContext();
 
+  // Automatically clean up audio context when component unmounts
   useEffect(() => {
-    const loadSounds = async () => {
-      const success = await initializeAudio([
-        laserSound.current,
-        ...explosionSounds.current,
-      ]);
-      setSoundsLoaded(success);
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+      if (backgroundMusicRef.current) {
+        backgroundMusicRef.current.pause();
+        backgroundMusicRef.current.currentTime = 0;
+      }
     };
-
-    loadSounds();
   }, []);
 
-  return {
-    soundsLoaded,
-    playLaser: () => playSound(laserSound.current),
-    playExplosion: () => playRandomSound(explosionSounds.current),
+  // Helper functions for common sound effects
+  const playLaser = () => {
+    if (!soundsLoaded || !audioBuffersRef.current.laser) return;
+    playSound(audioBuffersRef.current.laser);
   };
-};
+
+  const playExplosion = () => {
+    if (!soundsLoaded || !audioBuffersRef.current.explosion.length) return;
+    const randomBuffer =
+      audioBuffersRef.current.explosion[
+        Math.floor(Math.random() * audioBuffersRef.current.explosion.length)
+      ];
+    playSound(randomBuffer);
+  };
+
+  const toggleBackgroundMusic = async (shouldPlay = true) => {
+    if (!backgroundMusicRef.current) return;
+
+    try {
+      if (shouldPlay) {
+        backgroundMusicRef.current.volume = 0.2;
+        await backgroundMusicRef.current.play();
+      } else {
+        backgroundMusicRef.current.pause();
+        backgroundMusicRef.current.currentTime = 0;
+      }
+    } catch (error) {
+      console.error("Error toggling background music:", error);
+    }
+  };
+
+  const setBackgroundMusicVolume = (volume) => {
+    if (backgroundMusicRef.current) {
+      backgroundMusicRef.current.volume = Math.max(0, Math.min(1, volume));
+    }
+  };
+
+  return {
+    isAudioReady: soundsLoaded,
+    initializeAudio,
+    playLaser,
+    playExplosion,
+    toggleBackgroundMusic,
+    setBackgroundMusicVolume,
+  };
+}
