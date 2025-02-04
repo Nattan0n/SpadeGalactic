@@ -96,10 +96,7 @@ const SpaceShooterGame = () => {
           await audioContextRef.current.decodeAudioData(laserData);
 
         const explosionSounds = [
-          "/src/assets/sounds/Explosion1.wav",
-          "/src/assets/sounds/Explosion2.wav",
-          "/src/assets/sounds/Explosion3.wav",
-          "/src/assets/sounds/Explosion4.wav",
+          "/assets/sounds/Explosion1.wav",
         ];
 
         const loadedExplosions = await Promise.all(
@@ -571,7 +568,7 @@ const SpaceShooterGame = () => {
       width: "80px",
       height: "80px",
       transform: "translate(-50%, -50%)",
-      backgroundImage: "url(/src/assets/img/SP_xE_D.png)",
+      backgroundImage: "url(/assets/img/SP_xE_D.png)",
       backgroundSize: "contain",
       backgroundRepeat: "no-repeat",
       backgroundPosition: "center",
@@ -599,7 +596,7 @@ const SpaceShooterGame = () => {
       width: "100px",
       height: "100px",
       transform: "translate(-50%, -50%)",
-      backgroundImage: "url(/src/assets/img/EM_xE2_D.png)",
+      backgroundImage: "url(/assets/img/EM_xE2_D.png)",
       backgroundSize: "contain",
       backgroundRepeat: "no-repeat",
       backgroundPosition: "center",
@@ -610,7 +607,7 @@ const SpaceShooterGame = () => {
       width: "150px",
       height: "150px",
       transform: "translate(-50%, -50%)",
-      backgroundImage: "url(/src/assets/img/SpaceBG.jpg)",
+      backgroundImage: "url(/assets/img/SpaceBG.jpg)",
       backgroundSize: "contain",
       backgroundRepeat: "no-repeat",
       backgroundPosition: "center",
