@@ -527,13 +527,19 @@ const SpaceShooterGame = () => {
     };
   }, [gameOver, playerPosition, bullets, lastShotTime, boss]);
 
-  // Spawn new wave
-  useEffect(() => {
-    if (waveCleared) {
+ // Spawn new wave
+ useEffect(() => {
+  if (waveCleared) {
+    if (currentWave % 10 === 0) {
+      setBoss(createBoss(currentWave));
+      setEnemies([]);
+    } else {
+      setBoss(null);
       setEnemies(getWaveEnemies(currentWave));
-      setWaveCleared(false);
     }
-  }, [waveCleared, currentWave]);
+    setWaveCleared(false);
+  }
+}, [waveCleared, currentWave]);
 
   const handleRestart = () => {
     setGameOver(false);
@@ -631,7 +637,7 @@ const SpaceShooterGame = () => {
       width: "150px",
       height: "150px",
       transform: "translate(-50%, -50%)",
-      backgroundImage: "url(/assets/img/SpaceBG.jpg)",
+      backgroundImage: "url(/assets/img/boss.webp)",
       backgroundSize: "contain",
       backgroundRepeat: "no-repeat",
       backgroundPosition: "center",
